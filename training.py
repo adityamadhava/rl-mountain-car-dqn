@@ -4,7 +4,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.optimizers import Adam
 
 # --- GPU setup: predict network on GPU 0, target network on GPU 1 ---
@@ -74,7 +74,8 @@ def load_offline_data(path, min_score):
 
 def build_NN(Nactions, Nobservations):
     model = Sequential([
-        Dense(64, activation='relu', input_shape=(Nobservations,)),
+        Input(shape=(Nobservations,)),
+        Dense(64, activation='relu'),
         Dense(64, activation='relu'),
         Dense(Nactions),
     ])
