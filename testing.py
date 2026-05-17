@@ -3,24 +3,33 @@ import gymnasium as gym
 import pygame
 from tensorflow.keras.models import load_model
 
+_POS_MIN, _POS_MAX = -1.2,  0.6
+_VEL_MIN, _VEL_MAX = -0.07, 0.07
+
+def normalize_obs(obs):
+    pos = (obs[0] - _POS_MIN) / (_POS_MAX - _POS_MIN) * 2.0 - 1.0
+    vel = (obs[1] - _VEL_MIN) / (_VEL_MAX - _VEL_MIN) * 2.0 - 1.0
+    return np.array([pos, vel], dtype=np.float32)
+
 def choose_action(x, model, Nactions):
     # Choose action using the trained DQN model; no exploration at test time.
-    Q_val = model.predict(np.expand_dims(x, axis=0), verbose=0)[0]
+    Q_val = model(np.expand_dims(x, axis=0), training=False).numpy()[0]
     action = np.argmax(Q_val)
     return action
 
 
 # The following lines load the DQN model.
-# Path for model trained without offline data: 'DQN_offline_false.h5'
-# Path for model trained with offline data:    'DQN_offline_true.h5'
-model = load_model('DQN_offline_true.h5')
+# Path for model trained without offline data: 'DQN_offline_false.keras'
+# Path for model trained with offline data:    'DQN_offline_true.keras'
+model = load_model('DQN_offline_true.keras')
 Nactions = 3
 
 # Initialize the Mountain Car environment with render_mode='human' for animation.
 env = gym.make('MountainCar-v0', render_mode='human')
 
 # Reset the environment to get the initial state.
-x, _ = env.reset()
+x_raw, _ = env.reset()
+x = normalize_obs(x_raw)
 
 end_episode = False
 total_reward = 0
@@ -29,13 +38,13 @@ while not(end_episode):
     a = choose_action(x, model, Nactions)
 
     # Take the picked action; get next state, reward, and episode flags.
-    x_dash, r, terminated, truncated, _ = env.step(a)
+    x_dash_raw, r, terminated, truncated, _ = env.step(a)
 
     # Update the total reward.
     total_reward += r
 
     # Update the state for the next time slot.
-    x = np.copy(x_dash)
+    x = normalize_obs(x_dash_raw)
 
     # Update end_episode for the next time slot.
     end_episode = terminated or truncated

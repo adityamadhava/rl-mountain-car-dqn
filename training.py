@@ -82,7 +82,20 @@ def build_NN(Nactions, Nobservations):
 
 
 def exploration_prob_scheduler(episode):
-    return max(0.1, 1.0 * (0.995 ** episode))
+    # Slower decay so the car explores long enough to accidentally reach the goal.
+    # 0.999^episode hits 0.1 around episode 2300, which suits a 3000-episode run.
+    return max(0.1, 1.0 * (0.999 ** episode))
+
+
+# MountainCar observation bounds for normalisation
+_POS_MIN, _POS_MAX = -1.2,  0.6
+_VEL_MIN, _VEL_MAX = -0.07, 0.07
+
+def normalize_obs(obs):
+    """Scale position to [-1,1] and velocity to [-1,1] before feeding the network."""
+    pos = (obs[..., 0:1] - _POS_MIN) / (_POS_MAX - _POS_MIN) * 2.0 - 1.0
+    vel = (obs[..., 1:2] - _VEL_MIN) / (_VEL_MAX - _VEL_MIN) * 2.0 - 1.0
+    return np.concatenate([pos, vel], axis=-1).astype(np.float32)
 
 
 def choose_actions_batch(obs_batch, model, Nactions, epsilon):
@@ -182,7 +195,7 @@ def DQN_training(env, offline_data, use_offline_data):
     Nb          = 512      # Batch size (GPU-efficient; split across 2 GPUs)
     Nt          = 20       # Predict updates between target-network syncs
     beta        = 0.99     # Discount factor
-    Nepisodes   = 500      # Total episodes to train (counted across all envs)
+    Nepisodes   = 3000     # Total episodes to train (counted across all envs)
     alpha       = 0.001    # Learning rate
     Nsave       = 200      # Predict updates between periodic saves
     buffer_size = 100_000  # Replay buffer size
@@ -212,13 +225,13 @@ def DQN_training(env, offline_data, use_offline_data):
     buffer_counter = 0
     buffer_ix      = 0
 
-    # Pre-fill replay buffer with human-collected offline data
+    # Pre-fill replay buffer with human-collected offline data (normalised)
     if use_offline_data:
         s_d, a_d, r_d, ns_d, t_d = offline_data
         if len(s_d) > 0:
             buffer_counter, buffer_ix = add_batch_to_buffer(
-                s_d.astype(np.float32), a_d.astype(np.int32),
-                r_d.astype(np.float32), ns_d.astype(np.float32),
+                normalize_obs(s_d), a_d.astype(np.int32),
+                r_d.astype(np.float32), normalize_obs(ns_d),
                 t_d.astype(np.float32),
                 s_buf, a_buf, r_buf, ns_buf, t_buf,
                 buffer_size, buffer_counter, buffer_ix
@@ -238,7 +251,7 @@ def DQN_training(env, offline_data, use_offline_data):
         [lambda: gym.make('MountainCar-v0')] * N_ENVS
     )
     obs, _ = vec_env.reset()
-    obs = obs.astype(np.float32)
+    obs = normalize_obs(obs)
 
     while completed_episodes < Nepisodes:
         epsilon = exploration_prob_scheduler(completed_episodes)
@@ -246,8 +259,8 @@ def DQN_training(env, offline_data, use_offline_data):
         # One batched forward pass covers all N_ENVS environments
         actions = choose_actions_batch(obs, model_predict, Nactions, epsilon)
 
-        obs_next, rewards, terminateds, truncateds, infos = vec_env.step(actions)
-        obs_next = obs_next.astype(np.float32)
+        obs_next_raw, rewards, terminateds, truncateds, infos = vec_env.step(actions)
+        obs_next = normalize_obs(obs_next_raw)
         dones    = terminateds | truncateds
         episode_rewards += rewards
 
@@ -259,7 +272,7 @@ def DQN_training(env, offline_data, use_offline_data):
         if final_obs is not None:
             for i in range(N_ENVS):
                 if final_mask[i] and final_obs[i] is not None:
-                    next_obs_buf[i] = final_obs[i].astype(np.float32)
+                    next_obs_buf[i] = normalize_obs(final_obs[i][np.newaxis])[0]
 
         # Hold off adding env data for the first E episodes in offline mode
         if not use_offline_data or completed_episodes >= E:
@@ -304,7 +317,7 @@ def DQN_training(env, offline_data, use_offline_data):
 
             counter_save += 1
             if counter_save == Nsave:
-                model_predict.save(model_name + '.h5')
+                model_predict.save(model_name + '.keras')
                 counter_save = 0
 
     vec_env.close()
