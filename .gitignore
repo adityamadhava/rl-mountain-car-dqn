@@ -2,6 +2,5 @@
 __pycache__/
 *.pyc
 *.h5
-*.keras
 *.egg-info/
 .env
