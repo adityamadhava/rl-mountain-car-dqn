@@ -54,8 +54,11 @@ print('Q-values sanity check (should be ~[-80,-80,-80] not ~[0,0,0]):',
 # Initialize the Mountain Car environment with render_mode='human' for animation.
 env = gym.make('MountainCar-v0', render_mode='human')
 
-best_reward = -np.inf
-for episode in range(5):
+total_reward = -200
+episode = 0
+while total_reward <= -200 and episode < 30:
+    episode += 1
+
     # Reset the environment to get the initial state.
     x_raw, _ = env.reset()
     x = normalize_obs(x_raw)
@@ -78,11 +81,10 @@ for episode in range(5):
         # Update end_episode for the next time slot.
         end_episode = terminated or truncated
 
-    best_reward = max(best_reward, total_reward)
-    print('Episode = {}, Total reward = {}'.format(episode + 1, np.round(total_reward, 2)))
+    print('Episode = {}, Total reward = {}'.format(episode, np.round(total_reward, 2)))
 
 # Print the total reward.
-print('Best reward = {}'.format(np.round(best_reward, 2)))
+print('Final reward = {}'.format(np.round(total_reward, 2)))
 
 # Close the environment.
 env.close()
