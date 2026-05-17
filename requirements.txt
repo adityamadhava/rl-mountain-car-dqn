@@ -1,0 +1,6 @@
+tensorflow[and-cuda]
+gymnasium[classic-control]
+pygame
+pandas
+matplotlib
+numpy
