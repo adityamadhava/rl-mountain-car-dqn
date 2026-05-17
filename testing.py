@@ -1,4 +1,5 @@
 import numpy as np
+import zipfile, os, shutil
 import gymnasium as gym
 import pygame
 import tensorflow as tf
@@ -22,6 +23,14 @@ def build_NN(Nactions, Nobservations):
     ])
     return model
 
+def load_from_keras_zip(model, keras_path):
+    """Extract weights directly from inside the .keras zip — bypasses Keras saving_lib bug."""
+    tmp = keras_path + '_tmp'
+    with zipfile.ZipFile(keras_path, 'r') as z:
+        z.extractall(tmp)
+    model.load_weights(os.path.join(tmp, 'model.weights.h5'))
+    shutil.rmtree(tmp)
+
 def choose_action(x, model, Nactions):
     # Choose action using the trained DQN model; no exploration at test time.
     Q_val = model(np.expand_dims(x, axis=0), training=False).numpy()[0]
@@ -30,11 +39,11 @@ def choose_action(x, model, Nactions):
 
 
 # The following lines load the DQN model.
-# Path for model trained without offline data: 'DQN_offline_false.weights.h5'
-# Path for model trained with offline data:    'DQN_offline_true.weights.h5'
+# Path for model trained without offline data: 'DQN_offline_false.keras'
+# Path for model trained with offline data:    'DQN_offline_true.keras'
 Nactions = 3
 model = build_NN(Nactions, 2)
-model.load_weights('DQN_offline_true.weights.h5')
+load_from_keras_zip(model, 'DQN_offline_true.keras')
 
 # Initialize the Mountain Car environment with render_mode='human' for animation.
 env = gym.make('MountainCar-v0', render_mode='human')
