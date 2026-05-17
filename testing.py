@@ -24,7 +24,7 @@ def build_NN(Nactions, Nobservations):
     return model
 
 def load_from_keras_zip(model, keras_path):
-    """Extract weights directly from inside the .keras zip — bypasses Keras saving_lib bug."""
+    """Extract model.weights.h5 from inside the .keras zip and load directly."""
     tmp = keras_path + '_tmp'
     with zipfile.ZipFile(keras_path, 'r') as z:
         z.extractall(tmp)
@@ -44,6 +44,11 @@ def choose_action(x, model, Nactions):
 Nactions = 3
 model = build_NN(Nactions, 2)
 load_from_keras_zip(model, 'DQN_offline_true.keras')
+
+# Sanity check: trained model gives Q ≈ -80 to -90; random model gives ≈ 0
+sample = np.zeros((1, 2), dtype=np.float32)
+print('Q-values sanity check (should be ~[-80,-80,-80] not ~[0,0,0]):',
+      model(sample, training=False).numpy())
 
 # Initialize the Mountain Car environment with render_mode='human' for animation.
 env = gym.make('MountainCar-v0', render_mode='human')
