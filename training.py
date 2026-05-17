@@ -182,6 +182,7 @@ def plot_reward(total_reward_per_episode, window_length):
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
+    plt.savefig('reward_plot.png', dpi=150)
     plt.show()
 
 
@@ -334,7 +335,7 @@ min_score = -np.inf # The minimum total reward of an episode that should be used
 offline_data = load_offline_data(path, min_score)
 
 # Train DQN model
-use_offline_data = True # If True then the offline data will be used. Else, offline data will not be used.
+use_offline_data = False # If True then the offline data will be used. Else, offline data will not be used.
 final_model, total_reward_per_episode = DQN_training(env, offline_data, use_offline_data)
 
 # Save the final model
