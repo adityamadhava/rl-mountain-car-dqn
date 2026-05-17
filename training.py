@@ -326,25 +326,26 @@ def DQN_training(env, offline_data, use_offline_data):
     return model_predict, np.array(total_reward_per_episode)
 
 
-# Initiate the mountain car environment.
-# NO RENDERING. It will slow the training process.
-env = gym.make('MountainCar-v0')
+if __name__ == '__main__':
+    # Initiate the mountain car environment.
+    # NO RENDERING. It will slow the training process.
+    env = gym.make('MountainCar-v0')
 
-# Load the offline data collected in step 3. Also, process the dataset.
-path = 'car_dataset.csv' # This should contain the path to the collected dataset.
-min_score = -np.inf # The minimum total reward of an episode that should be used for training.
-offline_data = load_offline_data(path, min_score)
+    # Load the offline data collected in step 3. Also, process the dataset.
+    path = 'car_dataset.csv' # This should contain the path to the collected dataset.
+    min_score = -np.inf # The minimum total reward of an episode that should be used for training.
+    offline_data = load_offline_data(path, min_score)
 
-# Train DQN model
-use_offline_data = False # If True then the offline data will be used. Else, offline data will not be used.
-final_model, total_reward_per_episode = DQN_training(env, offline_data, use_offline_data)
+    # Train DQN model
+    use_offline_data = True # If True then the offline data will be used. Else, offline data will not be used.
+    final_model, total_reward_per_episode = DQN_training(env, offline_data, use_offline_data)
 
-# Save the final model
-model_name = 'DQN_offline_true' if use_offline_data else 'DQN_offline_false'
-final_model.save(model_name + '.keras')
+    # Save the final model
+    model_name = 'DQN_offline_true' if use_offline_data else 'DQN_offline_false'
+    final_model.save(model_name + '.keras')
 
-# Plot reward per episode and moving average reward
-window_length = 50    # Window length for moving average reward.
-plot_reward(total_reward_per_episode, window_length)
+    # Plot reward per episode and moving average reward
+    window_length = 50    # Window length for moving average reward.
+    plot_reward(total_reward_per_episode, window_length)
 
-env.close()
+    env.close()
