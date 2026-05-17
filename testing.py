@@ -31,11 +31,12 @@ def load_from_keras_zip(model, keras_path):
     model.load_weights(os.path.join(tmp, 'model.weights.h5'))
     shutil.rmtree(tmp)
 
-def choose_action(x, model, Nactions):
-    # Choose action using the trained DQN model; no exploration at test time.
+def choose_action(x, model, Nactions, epsilon=0.05):
+    # Mostly greedy; tiny epsilon breaks deterministic loops the greedy policy gets stuck in.
+    if np.random.uniform() < epsilon:
+        return np.random.randint(Nactions)
     Q_val = model(np.expand_dims(x, axis=0), training=False).numpy()[0]
-    action = np.argmax(Q_val)
-    return action
+    return int(np.argmax(Q_val))
 
 
 # The following lines load the DQN model.
@@ -61,7 +62,7 @@ end_episode = False
 total_reward = 0
 while not(end_episode):
     # Pick an action using choose_action() function.
-    a = choose_action(x, model, Nactions)
+    a = choose_action(x, model, Nactions, epsilon=0.05)
 
     # Take the picked action; get next state, reward, and episode flags.
     x_dash_raw, r, terminated, truncated, _ = env.step(a)
