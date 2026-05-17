@@ -195,7 +195,7 @@ def DQN_training(env, offline_data, use_offline_data):
     Nb          = 512      # Batch size (GPU-efficient; split across 2 GPUs)
     Nt          = 20       # Predict updates between target-network syncs
     beta        = 0.99     # Discount factor
-    Nepisodes   = 3000     # Total episodes to train (counted across all envs)
+    Nepisodes   = 5000     # Total episodes to train (counted across all envs)
     alpha       = 0.001    # Learning rate
     Nsave       = 200      # Predict updates between periodic saves
     buffer_size = 100_000  # Replay buffer size
@@ -339,7 +339,7 @@ final_model, total_reward_per_episode = DQN_training(env, offline_data, use_offl
 
 # Save the final model
 model_name = 'DQN_offline_true' if use_offline_data else 'DQN_offline_false'
-final_model.save(model_name + '.h5')
+final_model.save(model_name + '.keras')
 
 # Plot reward per episode and moving average reward
 window_length = 50    # Window length for moving average reward.
