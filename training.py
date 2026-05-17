@@ -319,7 +319,7 @@ def DQN_training(env, offline_data, use_offline_data):
 
             counter_save += 1
             if counter_save == Nsave:
-                model_predict.save_weights(model_name + '.weights.h5')
+                model_predict.save(model_name + '.keras')
                 counter_save = 0
 
     vec_env.close()
@@ -341,7 +341,7 @@ final_model, total_reward_per_episode = DQN_training(env, offline_data, use_offl
 
 # Save the final model
 model_name = 'DQN_offline_true' if use_offline_data else 'DQN_offline_false'
-final_model.save_weights(model_name + '.weights.h5')
+final_model.save(model_name + '.keras')
 
 # Plot reward per episode and moving average reward
 window_length = 50    # Window length for moving average reward.
