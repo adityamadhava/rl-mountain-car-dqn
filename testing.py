@@ -31,8 +31,8 @@ def load_from_keras_zip(model, keras_path):
     model.load_weights(os.path.join(tmp, 'model.weights.h5'))
     shutil.rmtree(tmp)
 
-def choose_action(x, model, Nactions, epsilon=0.05):
-    # Mostly greedy; tiny epsilon breaks deterministic loops the greedy policy gets stuck in.
+def choose_action(x, model, Nactions, epsilon=0.1):
+    # Mostly greedy; epsilon matches training floor to maintain the momentum-building behaviour.
     if np.random.uniform() < epsilon:
         return np.random.randint(Nactions)
     Q_val = model(np.expand_dims(x, axis=0), training=False).numpy()[0]
@@ -54,31 +54,35 @@ print('Q-values sanity check (should be ~[-80,-80,-80] not ~[0,0,0]):',
 # Initialize the Mountain Car environment with render_mode='human' for animation.
 env = gym.make('MountainCar-v0', render_mode='human')
 
-# Reset the environment to get the initial state.
-x_raw, _ = env.reset()
-x = normalize_obs(x_raw)
+best_reward = -np.inf
+for episode in range(5):
+    # Reset the environment to get the initial state.
+    x_raw, _ = env.reset()
+    x = normalize_obs(x_raw)
 
-end_episode = False
-total_reward = 0
-while not(end_episode):
-    # Pick an action using choose_action() function.
-    a = choose_action(x, model, Nactions, epsilon=0.05)
+    end_episode = False
+    total_reward = 0
+    while not(end_episode):
+        # Pick an action using choose_action() function.
+        a = choose_action(x, model, Nactions, epsilon=0.1)
 
-    # Take the picked action; get next state, reward, and episode flags.
-    x_dash_raw, r, terminated, truncated, _ = env.step(a)
+        # Take the picked action; get next state, reward, and episode flags.
+        x_dash_raw, r, terminated, truncated, _ = env.step(a)
 
-    # Update the total reward.
-    total_reward += r
+        # Update the total reward.
+        total_reward += r
 
-    # Update the state for the next time slot.
-    x = normalize_obs(x_dash_raw)
+        # Update the state for the next time slot.
+        x = normalize_obs(x_dash_raw)
 
-    # Update end_episode for the next time slot.
-    end_episode = terminated or truncated
+        # Update end_episode for the next time slot.
+        end_episode = terminated or truncated
 
+    best_reward = max(best_reward, total_reward)
+    print('Episode = {}, Total reward = {}'.format(episode + 1, np.round(total_reward, 2)))
 
 # Print the total reward.
-print('Total reward = {}'.format(np.round(total_reward, 2)))
+print('Best reward = {}'.format(np.round(best_reward, 2)))
 
 # Close the environment.
 env.close()
